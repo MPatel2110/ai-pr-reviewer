@@ -37,3 +37,19 @@ Day 5+ will revisit with more PRs (N>1) and explicit cross-reference instruction
 
 Resume bullet implication: feature can be honestly described as "context-aware reviews
 pulling related project files." It works mechanically. Quality lift requires more eval data.
+
+## Day 4 prompt caching — explicit vs implicit
+
+Attempted explicit cache via client.caches.create() with system_instruction.
+API returned 400: cached content too small (849 tokens, min 1024 for gemini-2.5-flash).
+
+Decision: use implicit caching instead.
+
+- Gemini auto-caches repeated prompt prefixes server-side
+- ~25% discount vs explicit's ~75%, but no minimum-size constraint
+- Triggered automatically by reusing system_instruction across requests
+- Zero additional code
+
+Interview talking point: evaluated both approaches, chose implicit for workload fit.
+Padding the system prompt to clear the threshold was considered and rejected as
+anti-pattern (longer prompts for no quality benefit).

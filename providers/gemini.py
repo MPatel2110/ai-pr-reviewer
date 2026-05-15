@@ -101,7 +101,19 @@ class GeminiProvider(LLMProvider):
         diff: str,
         context_files: list[tuple[Path, str]] | None = None,
     ) -> list[ReviewComment]:
-        """Send the diff to Gemini, optionally with related-file context."""
+        """
+        Send the diff to Gemini, optionally with related-file context.
+        
+        Uses Gemini's implicit prompt caching: when the same system_instruction
+        is sent across requests, Google's backend automatically caches the
+        prefix and applies a token discount on subsequent calls. No explicit
+        cache management is required.
+        
+        Note: Gemini's explicit caching API was evaluated but requires a
+        minimum of 1024 cached tokens for this model. Our system prompt is
+        ~850 tokens, below the threshold. Implicit caching gives most of
+        the benefit without the constraint.
+        """
         
         context_section = ""
         if context_files:
@@ -111,22 +123,20 @@ class GeminiProvider(LLMProvider):
                     f"# File: {path.name}\n```\n{content}\n```"
                 )
             context_section = (
-                "\n\n# Related project files (for context only - do NOT review these)\n\n"
+                "# Related project files (for context only - do NOT review these)\n\n"
                 + "\n\n".join(context_blocks)
+                + "\n\n"
             )
         
-        prompt = (
-            f"{SYSTEM_PROMPT}"
-            f"{context_section}"
-            f"\n\n# Diff to review\n```\n{diff}\n```"
-        )
+        user_content = f"{context_section}# Diff to review\n```\n{diff}\n```"
         
         response = self.client.models.generate_content(
             model=self.model,
-            contents=prompt,
+            contents=user_content,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=list[ReviewComment],
+                system_instruction=SYSTEM_PROMPT,
             ),
         )
         

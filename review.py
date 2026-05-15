@@ -139,7 +139,7 @@ def _review_with_context(
         print_comments(file_path, comments)
         total += len(comments)
     _print_summary(total, len(reviewable_files))
-
+    
 
 def _build_context_for(file_path: str, repo_path: Path) -> list[tuple[Path, str]]:
     """Resolve imports of file_path and return selected context files."""
