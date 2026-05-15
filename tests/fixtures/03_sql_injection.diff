@@ -1,0 +1,11 @@
+diff --git a/auth.py b/auth.py
+index 0000000..1111111 100644
+--- a/auth.py
++++ b/auth.py
+@@ -0,0 +1,6 @@
++def login(username, password):
++    query = f"SELECT * FROM users WHERE name = '{username}' AND password = '{password}'"
++    result = db.execute(query)
++    if result:
++        return create_session(result[0])
++    return None

@@ -1,0 +1,13 @@
+diff --git a/utils.py b/utils.py
+index 0000000..1111111 100644
+--- a/utils.py
++++ b/utils.py
+@@ -0,0 +1,8 @@
++def safe_divide(a: float, b: float) -> float | None:
++    """Divide a by b, returning None if b is zero."""
++    if b == 0:
++        return None
++    return a / b
++
++def greet(name: str) -> str:
++    return f"Hello, {name}!"

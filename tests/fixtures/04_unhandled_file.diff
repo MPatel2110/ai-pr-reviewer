@@ -1,0 +1,11 @@
+diff --git a/config_loader.py b/config_loader.py
+index 0000000..1111111 100644
+--- a/config_loader.py
++++ b/config_loader.py
+@@ -0,0 +1,6 @@
++import json
++
++def load_config(path):
++    """Load and parse a JSON config file."""
++    with open(path) as f:
++        return json.load(f)

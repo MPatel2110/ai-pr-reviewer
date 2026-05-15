@@ -1,0 +1,10 @@
+diff --git a/math_ops.py b/math_ops.py
+index 0000000..1111111 100644
+--- a/math_ops.py
++++ b/math_ops.py
+@@ -0,0 +1,5 @@
++def calculate_average(values):
++    """Return the arithmetic mean of a list of numbers."""
++    total = sum(values)
++    return total / len(values)
++
