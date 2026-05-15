@@ -1,27 +1,32 @@
+"""Abstract base class defining the contract for all LLM providers."""
+
 from abc import ABC, abstractmethod
+from pathlib import Path
+
 from models import ReviewComment
 
 
 class LLMProvider(ABC):
     """
     Contract that every LLM provider must fulfill.
-    
-    Any new provider (Claude, GPT, Llama, etc.) subclasses this and
-    implements review_diff(). The rest of the app talks to providers
-    only through this interface, so swapping providers requires no
-    changes to calling code.
     """
 
     @abstractmethod
-    def review_diff(self, diff: str) -> list[ReviewComment]:
+    def review_diff(
+        self,
+        diff: str,
+        context_files: list[tuple[Path, str]] | None = None,
+    ) -> list[ReviewComment]:
         """
         Send a code diff to the LLM and return structured review comments.
         
         Args:
             diff: A unified-diff-format string representing code changes.
+            context_files: Optional list of (path, content) for related files
+                that may help the model reason about the diff. Pass None or []
+                to disable context-aware review.
         
         Returns:
             A list of ReviewComment objects. Empty list means no issues found.
-            The list is never None — providers must return [] for clean diffs.
         """
         pass

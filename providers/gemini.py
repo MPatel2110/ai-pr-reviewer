@@ -1,8 +1,11 @@
 """Gemini implementation of the LLMProvider contract."""
 
 import os
+from pathlib import Path
+
 from google import genai
 from google.genai import types
+
 from .base import LLMProvider
 from models import ReviewComment
 
@@ -28,7 +31,7 @@ You can only reason from what the diff actually shows. You CANNOT assume:
 
 If your comment relies on an assumption like "if this is called with...", "if path is user input...", "if the dict doesn't have...", DO NOT FLAG IT. That is a hypothetical, not an issue.
 
-The only exception: when the diff itself creates the unsafe condition (e.g., directly building a SQL string from a parameter that the function explicitly takes — that IS visible in the diff).
+The only exception: when the diff itself creates the unsafe condition (e.g., directly building a SQL string from a parameter that the function explicitly takes - that IS visible in the diff).
 
 # What to NOT flag
 
@@ -69,7 +72,7 @@ BAD: "Consider adding error handling for the case where the file does not exist.
 (Vague tutorial advice.)
 
 GOOD: "calculate_average(values) will raise ZeroDivisionError when values is empty, since len(values) is 0. The function signature does not restrict input to non-empty lists."
-(The bug is in the diff itself — the function accepts a list parameter with no constraint, and divides by its length.)
+(The bug is in the diff itself - the function accepts a list parameter with no constraint, and divides by its length.)
 
 GOOD: "The query is built by concatenating the 'username' parameter directly into SQL. Any caller passing user input creates a SQL injection vector. Use parameterized queries."
 (The unsafe construction is visible in the diff.)
@@ -77,6 +80,8 @@ GOOD: "The query is built by concatenating the 'username' parameter directly int
 # Output
 
 Return a list of structured review comments. Each comment must specify file, line, severity, category, and comment text. If no issues qualify, return an empty list."""
+
+
 class GeminiProvider(LLMProvider):
     """LLM provider backed by Google's Gemini API."""
 
@@ -91,9 +96,30 @@ class GeminiProvider(LLMProvider):
         self.client = genai.Client(api_key=api_key)
         self.model = model
 
-    def review_diff(self, diff: str) -> list[ReviewComment]:
-        """Send the diff to Gemini and return validated review comments."""
-        prompt = f"{SYSTEM_PROMPT}\n\nDiff:\n```\n{diff}\n```"
+    def review_diff(
+        self,
+        diff: str,
+        context_files: list[tuple[Path, str]] | None = None,
+    ) -> list[ReviewComment]:
+        """Send the diff to Gemini, optionally with related-file context."""
+        
+        context_section = ""
+        if context_files:
+            context_blocks = []
+            for path, content in context_files:
+                context_blocks.append(
+                    f"# File: {path.name}\n```\n{content}\n```"
+                )
+            context_section = (
+                "\n\n# Related project files (for context only - do NOT review these)\n\n"
+                + "\n\n".join(context_blocks)
+            )
+        
+        prompt = (
+            f"{SYSTEM_PROMPT}"
+            f"{context_section}"
+            f"\n\n# Diff to review\n```\n{diff}\n```"
+        )
         
         response = self.client.models.generate_content(
             model=self.model,
@@ -104,5 +130,4 @@ class GeminiProvider(LLMProvider):
             ),
         )
         
-        # Gemini's SDK auto-parses the response into our Pydantic models
         return response.parsed or []
